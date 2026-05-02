@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
+    <title>最后一根线 · 在线排行榜完整版</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            background: #0a0c0f; font-family: 'Courier New', monospace;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; padding: 1rem; color: #e0e0e0;
+        }
+        .screen {
+            background: #11161c; border: 2px solid #2a3a4a; border-radius: 24px;
+            padding: 1.5rem; max-width: 600px; width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+        }
+        .menu-title { font-size: 2.2rem; text-align: center; margin-bottom: 0.3rem; color: #ff4d4d; text-shadow: 0 0 10px red; }
+        .rank-section { text-align: center; margin-bottom: 0.5rem; }
+        .rank-badge { font-size: 1rem; color: #ffbb33; }
+        .xp-text { font-size: 0.8rem; color: #cccccc; }
+        .xp-bar { width: 100%; height: 10px; background: #222; border-radius: 5px; margin: 0.3rem 0; overflow:hidden; }
+        .xp-fill { height: 100%; background: #ffbb33; width: 0%; transition: width 0.5s; }
+        .difficulty-list { display: flex; flex-direction: column; gap: 0.6rem; margin: 1rem 0; }
+        .difficulty-btn {
+            background: #1a2530; border: 2px solid #3b5268; color: #c0d4f0;
+            padding: 0.7rem 0.9rem; border-radius: 12px; font-size: 1rem;
+            cursor: pointer; display: flex; justify-content: space-between;
+            align-items: center; font-family: inherit;
+        }
+        .difficulty-btn:hover { background: #243240; border-color: #5f8ab0; }
+        .badge { background: #2a4b6e; padding: 0.2rem 0.6rem; border-radius: 10px; font-size: 0.8rem; }
+        .xp-reward { font-size: 0.8rem; color: #ffbb33; }
+        .leaderboard {
+            background: #1a2129; border: 1px solid #33485c; border-radius: 12px;
+            padding: 0.8rem; margin: 1rem 0; max-height: 200px; overflow-y: auto;
+        }
+        .leaderboard h3 { color: #ffbb33; margin-bottom: 0.5rem; }
+        .leaderboard table { width: 100%; border-collapse: collapse; }
+        .leaderboard td { padding: 0.2rem 0.4rem; border-bottom: 1px solid #2a3a4a; font-size: 0.85rem; }
+        .leaderboard th { text-align: left; color: #aaa; font-size: 0.8rem; padding-bottom: 0.3rem; }
+        .game-screen { display: none; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; border-bottom: 1px dashed #3b5268; padding-bottom: 0.6rem; }
+        .timer { font-size: 2.2rem; font-weight: bold; letter-spacing: 2px; color: #ff4d4d; text-shadow: 0 0 10px red; }
+        .timer.warning { animation: blink 0.5s infinite; }
+        @keyframes blink { 50% { opacity: 0.3; } }
+        .serial { background: #2e3b4a; padding: 0.3rem 0.8rem; border-radius: 12px; font-size: 1.1rem; }
+        .module { background: #1a2129; border: 1px solid #33485c; border-radius: 14px; padding: 0.8rem; margin-bottom: 0.8rem; }
+        .module h3 { color: #9bb8da; font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .wires { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: center; }
+        .wire {
+            width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-weight: bold; border: 3px solid #111; background: #2c2c2c;
+            cursor: pointer; color: white; position: relative; font-size: 0.9rem;
+        }
+        .wire.star::after { content: "★"; position: absolute; top: -6px; right: -4px; font-size: 1.2rem; color: gold; }
+        .wire.red { background: #c0302b; } .wire.blue { background: #1e5ca8; }
+        .wire.yellow { background: #b38f2c; } .wire.green { background: #2b6e4c; }
+        .wire.cut {
+            background: #444; opacity: 0.7; pointer-events: none;
+            font-size: 1.5rem; color: #ccc; border-style: dashed;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .wire.cut::before { content: "—"; font-size: 1.8rem; font-weight: bold; color: #888; }
+        .big-btn {
+            width: 80px; height: 80px; border-radius: 50%; border: 4px solid #580000;
+            font-weight: bold; color: white; cursor: pointer; box-shadow: 0 0 15px #ff4d4d88;
+            display: flex; align-items: center; justify-content: center; margin: 0 auto;
+        }
+        .big-btn:active { transform: scale(0.9); }
+        .symbols { font-size: 1.6rem; letter-spacing: 4px; text-align: center; margin-bottom: 0.3rem; }
+        .input-row { display: flex; gap: 0.3rem; justify-content: center; flex-wrap: wrap; margin: 0.4rem 0; }
+        .digit-input, .name-input {
+            background: #0e1218; border: 2px solid #3d5a73; color: white; border-radius: 8px;
+            font-size: 1.2rem; width: 40px; height: 44px; text-align: center;
+            font-family: inherit; padding: 0;
+        }
+        .name-input { width: 120px; }
+        .dir-btn, .keypad-btn, .color-btn, .led-btn, .eq-op-btn, .play-btn {
+            background: #0e1218; border: 2px solid #3d5a73; color: white; border-radius: 8px;
+            font-size: 1rem; width: 44px; height: 44px; text-align: center; cursor: pointer;
+            font-family: inherit; padding: 0; display: flex; align-items: center; justify-content: center;
+        }
+        .play-btn { width: auto; padding: 0 0.8rem; }
+        .led-btn.on { background: #4caf50; border-color: #2e7d32; }
+        .switch-row { display: flex; justify-content: space-between; align-items: center; margin: 0.2rem 0; }
+        .switch { width: 40px; height: 20px; background: #555; border-radius: 10px; position: relative; cursor: pointer; }
+        .switch.on { background: #4caf50; }
+        .switch::after { content: ''; position: absolute; width: 16px; height: 16px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: 0.2s; }
+        .switch.on::after { left: 22px; }
+        .progress-bar { width: 100%; height: 16px; background: #222; border-radius: 8px; margin: 0.4rem 0; }
+        .progress-fill { height: 100%; background: #ff5555; border-radius: 8px; width: 0%; transition: width 0.1s; }
+        .slider-input { width: 100%; margin: 0.4rem 0; }
+        .submit-btn, .back-btn, .action-btn, .reset-btn {
+            background: #2a4b6e; border: none; color: white; font-weight: bold; padding: 0.4rem 1rem;
+            border-radius: 8px; cursor: pointer; margin-top: 0.3rem; display: inline-block; font-family: inherit;
+            font-size: 0.9rem;
+        }
+        .back-btn { background: #5a3a3a; margin-left: 0.3rem; }
+        .action-btn { background: #4a6a3a; }
+        .action-btn:disabled { opacity: 0.5; pointer-events: none; background: #555; }
+        .reset-btn { background: #8b4513; }
+        .mistakes { display: flex; gap: 0.2rem; align-items: center; transition: 0.2s; }
+        .mistake-dot { width: 10px; height: 10px; border-radius: 50%; background: #ff3333; box-shadow: 0 0 6px red; }
+        .manual-btn {
+            background: #1d3348; border: 1px solid #4c7ea1; padding: 0.4rem; border-radius: 16px;
+            color: #c0e0ff; cursor: pointer; width: 100%; margin-top: 0.6rem; font-size: 0.9rem;
+        }
+        .manual-overlay {
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.85); z-index:1000; justify-content: center; align-items: flex-start; padding:1rem; overflow-y: auto;
+        }
+        .manual-overlay.active { display: flex; }
+        .manual-content {
+            background: #f5f0e8; color:#1e1e1e; border-radius:16px; padding:1.2rem; max-width:550px; width:100%;
+            position: relative; font-family:'Segoe UI', sans-serif; font-size: 0.9rem;
+        }
+        .close-manual { position:absolute; top:0.5rem; right:0.8rem; background:none; border:none; font-size:1.8rem; cursor:pointer; color:#b22222; }
+        .success { color:#4cff4c; font-size:1.8rem; text-align:center; }
+        .exploded { color:red; font-size:1.8rem; text-align:center; }
+        .result-buttons { text-align: center; margin-top: 0.8rem; }
+        .rule-box { background:white; border-left:4px solid #b22222; padding:0.8rem; margin:0.8rem 0; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+        .manual-content table { border-collapse:collapse; margin:0.4rem 0; width:100%; }
+        .manual-content td { padding:0.2rem 0.4rem; border:1px solid #aaa; text-align:center; }
+    </style>
+</head>
+<body>
+<div class="screen" id="menuScreen">
+    <div class="menu-title">💣 最后一根线</div>
+    <div class="rank-section">
+        <div class="rank-badge" id="rankDisplay">段位：新兵</div>
+        <div class="xp-text" id="xpTextDisplay">经验值：0 / 100</div>
+        <div class="xp-bar"><div class="xp-fill" id="xpFillMenu"></div></div>
+    </div>
+    <p style="text-align:center; margin-bottom:0.3rem;">选择难度，对照手册推理拆弹</p>
+    <div class="difficulty-list" id="difficultyList"></div>
+    <div class="leaderboard" id="leaderboardContainer">
+        <h3>🏆 全球排行榜</h3>
+        <div id="leaderboardContent">加载中...</div>
+    </div>
+</div>
+
+<div class="screen game-screen" id="gameScreen">
+    <div class="header">
+        <div class="timer" id="timerDisplay">00:00</div>
+        <div class="serial" id="serialDisplay">----</div>
+        <div class="mistakes" id="mistakesContainer"></div>
+    </div>
+    <div id="modulesArea"></div>
+    <button class="manual-btn" id="openManualBtn">📘 查看专家手册</button>
+    <div id="gameMessage"></div>
+</div>
+
+<div class="manual-overlay" id="manualOverlay"><div class="manual-content" id="manualContent"></div></div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<script>
+(function() {
+    // ========== 替换为你自己的 Firebase 配置 ==========
+    firebase.initializeApp({
+    apiKey: "AIzaSyBajdD26btxj7llrV8X7b2Y748xjb5-yS8",
+    authDomain: "bomb-game-3298e.firebaseapp.com",
+    projectId: "bomb-game-3298e",
+    storageBucket: "bomb-game-3298e.firebasestorage.app",
+    messagingSenderId: "258716839295"
+    });
+    const db = firebase.firestore();
+
+    // ========== 段位系统 ==========
+    const RANKS = ['新兵','拆弹学徒','拆弹专家','拆弹大师','拆弹之王'];
+    const XP_PER_RANK = [0, 100, 300, 700, 1500];
+    const STORAGE_XP = 'bomb_xp';
+    function getXP() { return parseInt(localStorage.getItem(STORAGE_XP) || '0'); }
+    function setXP(xp) { localStorage.setItem(STORAGE_XP, xp); }
+    function getRankIndex() {
+        const xp = getXP();
+        for (let i = RANKS.length-1; i >=0; i--) if (xp >= XP_PER_RANK[i]) return i;
+        return 0;
+    }
+    function addXP(amount) { setXP(getXP() + amount); updateRankUI(); }
+    function updateRankUI() {
+        const xp = getXP(), rankIdx = getRankIndex(), rankName = RANKS[rankIdx];
+        const nextXP = rankIdx < RANKS.length-1 ? XP_PER_RANK[rankIdx+1] : XP_PER_RANK[rankIdx];
+        const progress = rankIdx >= RANKS.length-1 ? 100 : Math.min(100, ((xp - XP_PER_RANK[rankIdx]) / (nextXP - XP_PER_RANK[rankIdx])) * 100);
+        document.getElementById('rankDisplay').textContent = `段位：${rankName}`;
+        document.getElementById('xpTextDisplay').textContent = `经验值：${xp} / ${nextXP}`;
+        document.getElementById('xpFillMenu').style.width = progress + '%';
+    }
+
+    // ========== Firebase 排行榜 ==========
+    async function getLeaderboard() {
+        const snapshot = await db.collection("scores").orderBy("score", "desc").limit(20).get();
+        const board = [];
+        snapshot.forEach(doc => board.push(doc.data()));
+        return board;
+    }
+    async function addToLeaderboard(name, score, difficulty, time) {
+        await db.collection("scores").add({
+            name, score, difficulty, time,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    }
+    async function renderLeaderboard() {
+        const container = document.getElementById('leaderboardContent');
+        try {
+            const board = await getLeaderboard();
+            if (board.length === 0) { container.innerHTML = '暂无记录，快来挑战！'; return; }
+            let html = '<table><tr><th>#</th><th>名字</th><th>分数</th><th>难度</th><th>用时</th></tr>';
+            board.forEach((e, i) => html += `<tr><td>${i+1}</td><td>${e.name.slice(0,10)}</td><td>${e.score}</td><td>${e.difficulty}</td><td>${e.time}</td></tr>`);
+            html += '</table>';
+            container.innerHTML = html;
+        } catch(e) { container.innerHTML = '排行榜加载失败'; }
+    }
+    renderLeaderboard();
+
+    // ========== 难度配置 ==========
+    const difficulties = [
+        { name:'简单', moduleCount:3, time:300, mistakes:3, xpBase:50 },
+        { name:'中等', moduleCount:5, time:360, mistakes:4, xpBase:100 },
+        { name:'困难', moduleCount:7, time:420, mistakes:5, xpBase:180 },
+        { name:'专家', moduleCount:10, time:600, mistakes:6, xpBase:300 }
+    ];
+    const diffEmoji = ['🟢','🟡','🟠','🔴'];
+    const diffList = document.getElementById('difficultyList');
+    diffList.innerHTML = '';
+    difficulties.forEach((d, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'difficulty-btn';
+        btn.dataset.diff = idx;
+        btn.innerHTML = `${diffEmoji[idx]} ${d.name} <span class="badge">${d.moduleCount} 模块</span> <span class="xp-reward">+${d.xpBase}~${d.xpBase + Math.floor(d.time/10)} XP</span>`;
+        btn.addEventListener('click', () => selectDifficulty(idx));
+        diffList.appendChild(btn);
+    });
+
+    // ========== 随机工具 ==========
+    function cyrb128(str) {
+        let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;
+        for(let i=0;i<str.length;i++){
+            let k=str.charCodeAt(i);
+            h1=h2^Math.imul(h1^k,597399067);h2=h3^Math.imul(h2^k,2869860233);
+            h3=h4^Math.imul(h3^k,951274213);h4=h1^Math.imul(h4^k,2716044179);
+        }
+        h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);
+        h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);
+        return[h1>>>0,h2>>>0,h3>>>0,h4>>>0];
+    }
+    function sfc32(a,b,c,d){
+        return function(){
+            a>>>=0;b>>>=0;c>>>=0;d>>>=0;
+            let t=(a+b|0)+d|0;d=d+1|0;a=b^b>>>9;b=c+(c<<3)|0;
+            c=(c<<21|c>>>11);c=c+t|0;return(t>>>0)/4294967296;
+        }
+    }
+    function createRng(seed){ const h=cyrb128(seed); return sfc32(h[0],h[1],h[2],h[3]); }
+
+    // ========== 全局变量 ==========
+    let rng, serial, lastDigit, isEven, serialHasVowel, firstLetter, vowelCount, digitSum;
+    let activeModules = {}, moduleStates = {};
+    let mistakes = 0, maxMistakes, timeLeft, timerInterval, gameOver = false;
+    let currentDifficulty = 0, startTimestamp;
+
+    const allModuleTypes = [
+        'wire','button','code','memory','direction','morse',
+        'colorSeq','keypad','logic','capacitor','wordlock','slider',
+        'binary','equation','rhythm','cipher','roman'
+    ];
+    let moduleData = {};
+
+    // 各查表数据
+    const directionTable = {
+        'A-E': ['⬆','⬇','⬅','➡','⬆'], 'F-J': ['⬇','⬅','➡','⬆','⬇'],
+        'K-O': ['⬅','➡','⬆','⬇','⬅'], 'P-T': ['➡','⬆','⬇','⬅','➡'],
+        'U-Z': ['⬆','⬆','⬇','⬇','⬅']
+    };
+    const colorTable = {
+        0: ['红','蓝','绿','黄','红'],1: ['红','蓝','绿','黄','红'],
+        2: ['蓝','绿','黄','红','蓝'],3: ['蓝','绿','黄','红','蓝'],
+        4: ['绿','黄','红','蓝','绿'],5: ['绿','黄','红','蓝','绿'],
+        6: ['黄','红','蓝','绿','黄'],7: ['黄','红','蓝','绿','黄'],
+        8: ['红','绿','蓝','黄','红'],9: ['红','绿','蓝','黄','红']
+    };
+    const keypadTable = [[1,3,5,7,9],[2,4,6,8,0],[9,7,5,3,1],[0,2,4,6,8],[5,1,9,3,7]];
+    const wordTable = {
+        A:'ALPHA',B:'BRAVO',C:'CHARLIE',D:'DELTA',E:'ECHO',F:'FOXTROT',G:'GOLF',H:'HOTEL',
+        I:'INDIA',J:'JULIET',K:'KILO',L:'LIMA',M:'MIKE',N:'NOVEMBER',O:'OSCAR',P:'PAPA',
+        Q:'QUEBEC',R:'ROMEO',S:'SIERRA',T:'TANGO',U:'UNIFORM',V:'VICTOR',W:'WHISKEY',
+        X:'XRAY',Y:'YANKEE',Z:'ZULU'
+    };
+    const morseTable = {
+        A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',
+        K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',
+        U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..'
+    };
+    const sliderZones = [[20,25],[45,50],[75,80],[10,15],[60,65]];
+    const rhythmTable = {
+        'HELP':['short','short','long','short'], 'BOMB':['long','short','short','long'],
+        'WIRE':['short','long','short','short'], 'CODE':['long','short','long','short'],
+        'FUSE':['short','short','short','long'], 'SAFE':['long','long','short','short'],
+        'DEFUSE':['short','long','short','long'], 'TIMER':['long','short','short','short']
+    };
+    const commonWords = ['HELP','BOMB','WIRE','CODE','FUSE','SAFE','DEFUSE','TIMER','HOT','ICE','KEY','DOOR'];
+    const symbolPoolFull = ['@','#','$','%','&','*','+','=','?','!','~','^','<','>','/','|'];
+    const romanNumerals = {
+        I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8,IX:9,X:10,XI:11,XII:12,XIII:13,XIV:14,XV:15,
+        XVI:16,XVII:17,XVIII:18,XIX:19,XX:20,XL:40,L:50,LX:60,LXX:70,LXXX:80,XC:90,C:100
+    };
+
+    // 音频
+    let audioCtx = null;
+    function getAudioContext() { if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+    function playTone(dur, freq=600) {
+        const ctx = getAudioContext(); const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type='square'; o.frequency.value=freq; g.gain.setValueAtTime(0.3,ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+dur);
+    }
+    function playRhythmSequence(seq) {
+        const start = getAudioContext().currentTime;
+        seq.forEach((t,i) => { const dur = t==='long'?0.3:0.1; setTimeout(()=>playTone(dur,660), (start-getAudioContext().currentTime + i*0.35)*1000); });
+    }
+
+    // ========== 流程控制 ==========
+    function selectDifficulty(idx) {
+        currentDifficulty = idx;
+        const cfg = difficulties[idx];
+        const shuffled = [...allModuleTypes].sort(()=>Math.random()-0.5);
+        const selected = shuffled.slice(0, cfg.moduleCount);
+        activeModules = {}; selected.forEach(t=>activeModules[t]=true);
+        moduleStates = {}; selected.forEach(t=>moduleStates[t]=false);
+        maxMistakes = cfg.mistakes; timeLeft = cfg.time;
+        startGame();
+    }
+
+    function startGame() {
+        document.getElementById('menuScreen').style.display='none';
+        document.getElementById('gameScreen').style.display='block';
+        gameSeed = Math.random().toString(36).slice(2,8)+Date.now().toString(36);
+        rng = createRng(gameSeed);
+        generateSerial(); generateAllModuleData();
+        mistakes = 0; gameOver = false;
+        clearInterval(timerInterval);
+        document.getElementById('gameMessage').innerHTML='';
+        updateMistakesUI(); renderModules(); startTimer();
+        startTimestamp = Date.now();
+    }
+
+    function generateSerial() {
+        const L = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        const l1 = L[Math.floor(rng()*L.length)], l2 = L[Math.floor(rng()*L.length)];
+        serial = l1+Math.floor(rng()*10)+l2+Math.floor(rng()*10);
+        document.getElementById('serialDisplay').textContent = serial;
+        lastDigit = parseInt(serial.charAt(3)); isEven = lastDigit%2===0;
+        serialHasVowel = /[AEIOU]/.test(serial);
+        firstLetter = serial.charAt(0).toUpperCase();
+        vowelCount = serial.split('').filter(c=>'AEIOU'.includes(c)).length;
+        digitSum = parseInt(serial.charAt(1)) + parseInt(serial.charAt(3));
+    }
+
+    function generateAllModuleData() {
+        moduleData = {};
+        if(activeModules.wire){
+            const colors = ['red','blue','yellow','green'].sort(()=>rng()-0.5);
+            moduleData.wire = colors.map((c,i)=>({color:c, hasStar:rng()>0.55, cut:false, index:i}));
+        }
+        if(activeModules.button) moduleData.button = { label:['引爆','中止'][Math.floor(rng()*2)], color:['红色','蓝色','白色'][Math.floor(rng()*3)] };
+        if(activeModules.code) {
+            const pool = [...symbolPoolFull].sort(()=>rng()-0.5);
+            const real = pool.slice(0,4), fake = pool.slice(4,8).filter(s=>!real.includes(s));
+            const all = [...real,...fake].sort(()=>rng()-0.5);
+            const map={}; const used=new Set();
+            all.forEach(s=>{ let d; do{d=Math.floor(rng()*10)}while(used.has(d)); used.add(d); map[s]=d; });
+            moduleData.code = { symbols:real, allSymbols:all, map };
+        }
+        if(activeModules.memory) {
+            const d=[]; for(let i=0;i<4;i++) d.push(Math.floor(rng()*10));
+            moduleData.memory = { digits:d, revealedOnce:false, visible:false };
+        }
+        if(activeModules.direction) {
+            const range = Object.keys(directionTable).find(r=>{const[l,h]=r.split('-');return firstLetter>=l&&firstLetter<=h;})||'U-Z';
+            moduleData.direction = { sequence:[...directionTable[range]], userInput:[] };
+        }
+        if(activeModules.morse) {
+            const words = ['HELP','BOMB','WIRE','CODE','FUSE','SAFE','DEFUSE','TIMER'];
+            const w = words[Math.floor(rng()*words.length)];
+            moduleData.morse = { word:w, morseSeq: w.split('').map(c=>morseTable[c]||'?').join(' ') };
+        }
+        if(activeModules.colorSeq) moduleData.colorSeq = { sequence:[...colorTable[lastDigit]], userInput:[] };
+        if(activeModules.keypad) moduleData.keypad = { sequence:[...keypadTable[Math.min(vowelCount,4)]], userInput:[] };
+        if(activeModules.logic) {
+            const req = serialHasVowel ? [true,false,true,false] : [false,false,false,false];
+            moduleData.logic = { switches:req.map(r=>({on:false})), required:req };
+        }
+        if(activeModules.capacitor) moduleData.capacitor = { zone:lastDigit<5?[20,30]:[70,80], charge:0, intervalId:null };
+        if(activeModules.wordlock) moduleData.wordlock = { word:wordTable[firstLetter]||'ALPHA' };
+        if(activeModules.slider) moduleData.slider = { zone:sliderZones[Math.min(vowelCount,4)], userValue:0 };
+        if(activeModules.binary) {
+            const bin = digitSum.toString(2).padStart(4,'0').split('').map(Number);
+            moduleData.binary = { target:bin, current:[0,0,0,0] };
+        }
+        if(activeModules.equation) {
+            const A=lastDigit, B=vowelCount, C=firstLetter.charCodeAt(0)-64;
+            let op=null;
+            if(A+B===C) op='+'; else if(A-B===C) op='-'; else if(A*B===C) op='×';
+            moduleData.equation = { A,B,C, validOp:op };
+        }
+        if(activeModules.rhythm) {
+            const e = Object.entries(rhythmTable)[Math.floor(rng()*8)];
+            moduleData.rhythm = { word:e[0], sequence:e[1] };
+        }
+        if(activeModules.cipher) {
+            const shift = firstLetter.charCodeAt(0)-65;
+            const plain = commonWords[Math.floor(rng()*commonWords.length)];
+            const encrypted = plain.split('').map(c=>String.fromCharCode((c.charCodeAt(0)-65+shift)%26+65)).join('');
+            moduleData.cipher = { encrypted, plain, shift };
+        }
+        if(activeModules.roman) {
+            const keys = Object.keys(romanNumerals);
+            const roman = keys[Math.floor(rng()*keys.length)];
+            moduleData.roman = { roman, value:romanNumerals[roman] };
+        }
+    }
+
+    // ========== UI ==========
+    function updateMistakesUI() {
+        let dots = '';
+        for(let i=0;i<maxMistakes;i++) dots += i<mistakes ? '<div class="mistake-dot"></div>' : '<div style="width:10px;height:10px;border-radius:50%;background:#2a3a4a;"></div>';
+        document.getElementById('mistakesContainer').innerHTML = dots;
+    }
+    function renderModules() {
+        let html = '';
+        Object.keys(activeModules).forEach(type=>{ if(!moduleStates[type]) html += renderModuleByType(type); });
+        if(Object.values(moduleStates).every(v=>v)) html += '<div style="text-align:center;color:#7fff7f;font-size:1.2rem;">所有模块已解除 ✅</div>';
+        document.getElementById('modulesArea').innerHTML = html;
+        attachAllListeners();
+        if(activeModules.capacitor && !moduleStates.capacitor) startCapacitorCharge();
+    }
+    function renderModuleByType(type) {
+        switch(type) {
+            case 'wire': return `<div class="module"><h3>🔌 接线模块</h3><div class="wires">${moduleData.wire.map((w,i)=>w.cut?`<div class="wire ${w.color} cut"></div>`:`<div class="wire ${w.color} ${w.hasStar?'star':''}" data-wire="${i}">${i+1}</div>`).join('')}</div></div>`;
+            case 'button': const b=moduleData.button; return `<div class="module"><h3>🔴 按钮模块</h3><div class="big-btn" id="theButton" style="background:${b.color==='红色'?'#c0392b':b.color==='蓝色'?'#2c5f8a':'#b0b0b0'}">${b.label}</div><div style="color:#aaa;text-align:center;margin-top:0.3rem;">颜色：${b.color}</div></div>`;
+            case 'code': return `<div class="module"><h3>🔢 符号密码</h3><div class="symbols">${moduleData.code.symbols.join(' ')}</div><div class="input-row">${'<input class="digit-input code-digit" maxlength="1" inputmode="numeric">'.repeat(4)}</div><button class="submit-btn" id="submitCode">提交</button></div>`;
+            case 'memory': const m=moduleData.memory; return `<div class="module"><h3>🧠 记忆数字</h3><div id="memoryDisplay" style="font-size:2.2rem;text-align:center;min-height:2.5rem;">${m.visible?m.digits.join(' '):'? ? ? ?'}</div>${!m.revealedOnce?`<div style="text-align:center"><button class="action-btn" id="revealMemoryBtn">👁️ 显示数字</button></div>`:''}<div class="input-row">${'<input class="digit-input mem-digit" maxlength="1" inputmode="numeric">'.repeat(4)}</div><button class="submit-btn" id="submitMemory">提交</button></div>`;
+            case 'direction': return `<div class="module"><h3>🧭 方向锁</h3><div class="input-row">${['⬆','⬇','⬅','➡'].map(d=>`<button class="dir-btn" data-dir="${d}">${d}</button>`).join('')}</div><div>已输入：<span id="dirDisplay"></span></div><button class="submit-btn" id="resetDir">重置</button></div>`;
+            case 'morse': return `<div class="module"><h3>📡 莫尔斯电码</h3><div style="font-size:1.8rem;text-align:center;letter-spacing:2px;">${moduleData.morse.morseSeq}</div><input class="digit-input" id="morseInput" placeholder="输入单词" style="width:100%;max-width:180px;margin:0.3rem auto;display:block;"><button class="submit-btn" id="submitMorse">提交</button></div>`;
+            case 'colorSeq': return `<div class="module"><h3>🎨 颜色序列</h3><div class="input-row">${['红','蓝','绿','黄'].map(c=>`<button class="color-btn" data-color="${c}" style="background:${c==='红'?'#c0392b':c==='蓝'?'#1e5ca8':c==='绿'?'#2b6e4c':'#b38f2c'};">${c}</button>`).join('')}</div><div>已输入：<span id="colorDisplay"></span></div><button class="submit-btn" id="resetColor">重置</button></div>`;
+            case 'keypad': {
+                let kb = ''; for(let i=1;i<=9;i++) kb+=`<button class="keypad-btn num-key" data-num="${i}">${i}</button>`;
+                kb+=`<button class="keypad-btn num-key" data-num="0">0</button>`;
+                return `<div class="module"><h3>🔢 数字键盘序列</h3><div class="input-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.3rem;">${kb}</div><div>已输入：<span id="keypadDisplay"></span></div><button class="submit-btn" id="resetKeypad">重置</button></div>`;
+            }
+            case 'logic': return `<div class="module"><h3>⚡ 逻辑开关</h3>${moduleData.logic.switches.map((s,i)=>`<div class="switch-row"><span>开关 ${i+1}</span><div class="switch ${s.on?'on':''}" data-switch="${i}"></div></div>`).join('')}<button class="submit-btn" id="submitLogic">确认设置</button></div>`;
+            case 'capacitor': return `<div class="module"><h3>⚡ 电容放电</h3><div class="progress-bar"><div class="progress-fill" id="capFill" style="width:0%"></div></div><div>电量：<span id="capPercent">0</span>%</div><div style="display:flex;gap:0.3rem;justify-content:center;"><button class="submit-btn" id="dischargeBtn" disabled>放电</button><button class="reset-btn" id="resetCapBtn">🔄 重置充电</button></div></div>`;
+            case 'wordlock': return `<div class="module"><h3>🔤 字母密码</h3><div>输入正确单词</div><input class="digit-input" id="wordlockInput" style="width:100%;max-width:180px;margin:0.3rem auto;display:block;text-transform:uppercase;"><button class="submit-btn" id="submitWordlock">提交</button></div>`;
+            case 'slider': return `<div class="module"><h3>🎚️ 滑块校准</h3><input type="range" min="0" max="100" value="0" class="slider-input" id="sliderInput"><div>当前：<span id="sliderValue">0</span>%</div><button class="submit-btn" id="lockSliderBtn">锁定</button></div>`;
+            case 'binary': return `<div class="module"><h3>💡 二进制指示灯</h3><div class="input-row">${[0,1,2,3].map(i=>`<button class="led-btn binary-led ${moduleData.binary.current[i]?'on':''}" data-index="${i}">${i+1}</button>`).join('')}</div><button class="submit-btn" id="submitBinary">提交</button></div>`;
+            case 'equation': return `<div class="module"><h3>➗ 数学方程式</h3><div style="text-align:center;font-size:1.8rem;">A _ B = C</div><p style="text-align:center;font-size:0.8rem;color:#aaa;">(A=末位 B=元音数 C=首字母位置)</p><div class="input-row">${['+','-','×','不可能'].map(op=>`<button class="eq-op-btn" data-op="${op}">${op}</button>`).join('')}</div></div>`;
+            case 'rhythm': return `<div class="module"><h3>🎵 节奏密码</h3><div style="text-align:center;"><button class="play-btn" id="playRhythmBtn">🔊 播放节奏</button></div><input class="digit-input" id="rhythmInput" placeholder="输入单词" style="width:100%;max-width:180px;margin:0.3rem auto;display:block;"><button class="submit-btn" id="submitRhythm">提交</button></div>`;
+            case 'cipher': return `<div class="module"><h3>🔀 字母偏移锁</h3><div style="font-size:1.6rem;text-align:center;">${moduleData.cipher.encrypted}</div><input class="digit-input" id="cipherInput" placeholder="解密后单词" style="width:100%;max-width:180px;margin:0.3rem auto;display:block;"><button class="submit-btn" id="submitCipher">提交</button></div>`;
+            case 'roman': return `<div class="module"><h3>🏛️ 罗马数字</h3><div style="font-size:2rem;text-align:center;">${moduleData.roman.roman}</div><input class="digit-input" id="romanInput" placeholder="阿拉伯数字" style="width:100%;max-width:180px;margin:0.3rem auto;display:block;"><button class="submit-btn" id="submitRoman">提交</button></div>`;
+        }
+    }
+
+    // ========== 事件监听 ==========
+    function attachAllListeners() {
+        document.querySelectorAll('.wire:not(.cut)').forEach(el=>el.addEventListener('click', function(){
+            if(gameOver||moduleStates.wire) return;
+            const idx=parseInt(this.dataset.wire), wires=moduleData.wire;
+            let correct;
+            if(isEven){
+                const starY=wires.findIndex(w=>w.color==='yellow'&&w.hasStar&&!w.cut);
+                correct = starY!==-1?starY : wires.findIndex(w=>w.color==='green'&&!w.cut);
+            } else {
+                const starR=wires.findIndex(w=>w.color==='red'&&w.hasStar&&!w.cut);
+                correct = starR!==-1?starR : wires.map((w,i)=>w.color==='blue'&&!w.cut?i:-1).filter(i=>i!==-1)[1]||0;
+            }
+            if(idx===correct){ wires[idx].cut=true; solve('wire'); } else { addMistake(); triggerError(); }
+            renderModules();
+        }));
+        const bigBtn=document.getElementById('theButton');
+        if(bigBtn&&!moduleStates.button){
+            let timer, held=false;
+            const start=e=>{e.preventDefault(); held=true; timer=setTimeout(()=>{if(held)handleButton('long'); held=false;},800);};
+            const end=e=>{e.preventDefault(); if(timer){clearTimeout(timer); if(held)handleButton('short');} held=false;};
+            bigBtn.addEventListener('mousedown',start); bigBtn.addEventListener('mouseup',end);
+            bigBtn.addEventListener('touchstart',start,{passive:false}); bigBtn.addEventListener('touchend',end);
+        }
+        function handleButton(type){
+            const d=moduleData.button; let correct;
+            if(d.label==='引爆'&&serialHasVowel) correct='long';
+            else if(d.label==='中止') correct='short';
+            else correct = d.color==='蓝色'?'short':'long';
+            if(type===correct) solve('button'); else { addMistake(); triggerError(); }
+            renderModules();
+        }
+        document.getElementById('submitCode')?.addEventListener('click',()=>{
+            const val=[...document.querySelectorAll('.code-digit')].map(i=>i.value).join('');
+            const correct=moduleData.code.symbols.map(s=>moduleData.code.map[s]).join('');
+            if(val===correct) solve('code'); else { addMistake(); triggerError(); document.querySelectorAll('.code-digit').forEach(i=>i.value=''); }
+        });
+        document.getElementById('revealMemoryBtn')?.addEventListener('click',function(){
+            const mem=moduleData.memory;
+            if(moduleStates.memory||gameOver||mem.revealedOnce) return;
+            mem.revealedOnce=true; mem.visible=true;
+            clearTimeout(window._memoryHideTimeout);
+            window._memoryHideTimeout = setTimeout(()=>{ if(!moduleStates.memory&&!gameOver){ mem.visible=false; renderModules(); } },3000);
+            renderModules();
+        });
+        document.getElementById('submitMemory')?.addEventListener('click',()=>{
+            const mem=moduleData.memory;
+            if(!mem.revealedOnce){ alert('请先点击“显示数字”！'); return; }
+            const val=[...document.querySelectorAll('.mem-digit')].map(i=>i.value).join('');
+            if(val===mem.digits.join('')) solve('memory'); else { addMistake(); triggerError(); document.querySelectorAll('.mem-digit').forEach(i=>i.value=''); }
+        });
+        document.querySelectorAll('.dir-btn').forEach(b=>b.addEventListener('click',function(){
+            if(gameOver||moduleStates.direction) return;
+            moduleData.direction.userInput.push(this.dataset.dir);
+            document.getElementById('dirDisplay').textContent = moduleData.direction.userInput.join(' ');
+            if(moduleData.direction.userInput.length===moduleData.direction.sequence.length){
+                if(moduleData.direction.userInput.join('')===moduleData.direction.sequence.join('')) solve('direction');
+                else { addMistake(); triggerError(); moduleData.direction.userInput=[]; }
+            }
+        }));
+        document.getElementById('resetDir')?.addEventListener('click',()=>{ moduleData.direction.userInput=[]; document.getElementById('dirDisplay').textContent=''; });
+        document.getElementById('submitMorse')?.addEventListener('click',()=>{
+            if(document.getElementById('morseInput').value.toUpperCase()===moduleData.morse.word) solve('morse'); else { addMistake(); triggerError(); }
+        });
+        document.querySelectorAll('.color-btn').forEach(b=>b.addEventListener('click',function(){
+            if(gameOver||moduleStates.colorSeq) return;
+            moduleData.colorSeq.userInput.push(this.dataset.color);
+            document.getElementById('colorDisplay').textContent = moduleData.colorSeq.userInput.join(' ');
+            if(moduleData.colorSeq.userInput.length===moduleData.colorSeq.sequence.length){
+                if(moduleData.colorSeq.userInput.join('')===moduleData.colorSeq.sequence.join('')) solve('colorSeq');
+                else { addMistake(); triggerError(); moduleData.colorSeq.userInput=[]; }
+            }
+        }));
+        document.getElementById('resetColor')?.addEventListener('click',()=>{ moduleData.colorSeq.userInput=[]; document.getElementById('colorDisplay').textContent=''; });
+        document.querySelectorAll('.num-key').forEach(b=>b.addEventListener('click',function(){
+            if(gameOver||moduleStates.keypad) return;
+            moduleData.keypad.userInput.push(parseInt(this.dataset.num));
+            document.getElementById('keypadDisplay').textContent = moduleData.keypad.userInput.join(' ');
+            if(moduleData.keypad.userInput.length===moduleData.keypad.sequence.length){
+                if(moduleData.keypad.userInput.join('')===moduleData.keypad.sequence.join('')) solve('keypad');
+                else { addMistake(); triggerError(); moduleData.keypad.userInput=[]; }
+            }
+        }));
+        document.getElementById('resetKeypad')?.addEventListener('click',()=>{ moduleData.keypad.userInput=[]; document.getElementById('keypadDisplay').textContent=''; });
+        document.querySelectorAll('.switch').forEach(el=>el.addEventListener('click',function(){
+            const idx=parseInt(this.dataset.switch);
+            moduleData.logic.switches[idx].on = !moduleData.logic.switches[idx].on;
+            this.classList.toggle('on');
+        }));
+        document.getElementById('submitLogic')?.addEventListener('click',()=>{
+            if(JSON.stringify(moduleData.logic.switches.map(s=>s.on))===JSON.stringify(moduleData.logic.required)) solve('logic'); else { addMistake(); triggerError(); }
+        });
+        document.getElementById('dischargeBtn')?.addEventListener('click',()=>{
+            const c=moduleData.capacitor.charge, [l,h]=moduleData.capacitor.zone;
+            if(c>=l&&c<=h) solve('capacitor'); else { addMistake(); triggerError(); }
+        });
+        document.getElementById('resetCapBtn')?.addEventListener('click',()=>{
+            if(gameOver||moduleStates.capacitor) return;
+            moduleData.capacitor.charge=0; document.getElementById('capFill').style.width='0%'; document.getElementById('capPercent').textContent='0';
+        });
+        document.getElementById('submitWordlock')?.addEventListener('click',()=>{
+            if(document.getElementById('wordlockInput').value.toUpperCase()===moduleData.wordlock.word) solve('wordlock'); else { addMistake(); triggerError(); }
+        });
+        const slider=document.getElementById('sliderInput'), sliderVal=document.getElementById('sliderValue');
+        if(slider&&sliderVal){
+            slider.addEventListener('input',()=>{ moduleData.slider.userValue=parseInt(slider.value); sliderVal.textContent=slider.value; });
+            document.getElementById('lockSliderBtn')?.addEventListener('click',()=>{
+                const v=moduleData.slider.userValue, [l,h]=moduleData.slider.zone;
+                if(v>=l&&v<=h) solve('slider'); else { addMistake(); triggerError(); }
+            });
+        }
+        document.querySelectorAll('.binary-led').forEach(b=>b.addEventListener('click',function(){
+            if(gameOver||moduleStates.binary) return;
+            const idx=parseInt(this.dataset.index);
+            moduleData.binary.current[idx] = moduleData.binary.current[idx]?0:1;
+            this.classList.toggle('on');
+        }));
+        document.getElementById('submitBinary')?.addEventListener('click',()=>{
+            if(moduleData.binary.current.join('')===moduleData.binary.target.join('')) solve('binary'); else { addMistake(); triggerError(); }
+        });
+        document.querySelectorAll('.eq-op-btn').forEach(b=>b.addEventListener('click',function(){
+            if(gameOver||moduleStates.equation) return;
+            const op=this.dataset.op;
+            if(op==='不可能'&&!moduleData.equation.validOp) solve('equation');
+            else if(op===moduleData.equation.validOp) solve('equation');
+            else { addMistake(); triggerError(); }
+            renderModules();
+        }));
+        document.getElementById('playRhythmBtn')?.addEventListener('click',()=>{
+            if(gameOver||moduleStates.rhythm) return;
+            playRhythmSequence(moduleData.rhythm.sequence);
+        });
+        document.getElementById('submitRhythm')?.addEventListener('click',()=>{
+            if(document.getElementById('rhythmInput').value.toUpperCase()===moduleData.rhythm.word) solve('rhythm'); else { addMistake(); triggerError(); }
+        });
+        document.getElementById('submitCipher')?.addEventListener('click',()=>{
+            if(document.getElementById('cipherInput').value.toUpperCase()===moduleData.cipher.plain) solve('cipher'); else { addMistake(); triggerError(); }
+        });
+        document.getElementById('submitRoman')?.addEventListener('click',()=>{
+            if(parseInt(document.getElementById('romanInput').value.trim())===moduleData.roman.value) solve('roman'); else { addMistake(); triggerError(); }
+        });
+    }
+
+    function triggerError() {
+        document.getElementById('gameScreen').style.boxShadow='0 0 40px rgba(255,0,0,0.8)';
+        setTimeout(()=> document.getElementById('gameScreen').style.boxShadow='',300);
+        if(window.navigator&&window.navigator.vibrate) window.navigator.vibrate(200);
+    }
+
+    function startCapacitorCharge(){
+        if(!activeModules.capacitor||moduleStates.capacitor) return;
+        const cap=moduleData.capacitor; cap.charge=0;
+        if(cap.intervalId) clearInterval(cap.intervalId);
+        cap.intervalId=setInterval(()=>{
+            if(gameOver||moduleStates.capacitor){ clearInterval(cap.intervalId); return; }
+            cap.charge+=1.5; if(cap.charge>100) cap.charge=100;
+            document.getElementById('capFill').style.width=cap.charge+'%';
+            document.getElementById('capPercent').textContent=Math.floor(cap.charge);
+            document.getElementById('dischargeBtn').disabled=false;
+        },150);
+    }
+
+    function solve(type){ if(moduleStates[type]) return; moduleStates[type]=true; playBeep(660,0.15); checkGameOver(); renderModules(); }
+    function addMistake(){ mistakes++; updateMistakesUI(); playBeep(200,0.1,'sawtooth'); checkGameOver(); }
+    function checkGameOver(){
+        if(gameOver) return;
+        if(mistakes>=maxMistakes) endGame(false);
+        else if(Object.values(moduleStates).every(v=>v)) endGame(true);
+    }
+    function endGame(win){
+        if(gameOver) return;
+        gameOver=true; clearInterval(timerInterval); clearTimeout(window._memoryHideTimeout);
+        if(moduleData.capacitor?.intervalId) clearInterval(moduleData.capacitor.intervalId);
+        const msg=document.getElementById('gameMessage');
+        if(win){
+            const elapsed=Math.floor((Date.now()-startTimestamp)/1000);
+            const xpEarned = difficulties[currentDifficulty].xpBase + Math.floor(timeLeft/10);
+            addXP(xpEarned);
+            msg.innerHTML = `<div class="success">💣 炸弹已拆除！<br>+${xpEarned} XP</div>
+                <div style="text-align:center;margin-top:0.5rem;">
+                    <input class="name-input" id="playerNameInput" placeholder="你的名字" maxlength="10">
+                    <button class="submit-btn" id="saveScoreBtn">🏆 提交成绩</button>
+                </div>`;
+            document.getElementById('saveScoreBtn').addEventListener('click', async ()=>{
+                const name = document.getElementById('playerNameInput').value.trim() || '匿名';
+                const diffName = difficulties[currentDifficulty].name;
+                const timeStr = `${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,'0')}`;
+                await addToLeaderboard(name, xpEarned, diffName, timeStr);
+                await renderLeaderboard();
+                document.getElementById('saveScoreBtn').disabled = true;
+                document.getElementById('playerNameInput').disabled = true;
+            });
+        } else {
+            msg.innerHTML = '<div class="exploded">💥 炸弹爆炸了！</div>';
+        }
+        msg.innerHTML += '<div class="result-buttons"><button class="submit-btn" id="backToMenuBtn">🏠 返回主菜单</button></div>';
+        document.getElementById('backToMenuBtn').addEventListener('click', backToMenu);
+        playBeep(win?800:90,0.4);
+    }
+    function backToMenu(){
+        clearInterval(timerInterval); clearTimeout(window._memoryHideTimeout);
+        if(moduleData.capacitor?.intervalId) clearInterval(moduleData.capacitor.intervalId);
+        document.getElementById('gameScreen').style.display='none';
+        document.getElementById('menuScreen').style.display='block';
+        gameOver=true;
+        updateRankUI();
+        renderLeaderboard();
+    }
+    function startTimer(){
+        updateTimerDisplay();
+        timerInterval=setInterval(()=>{ if(gameOver) return; timeLeft--; updateTimerDisplay(); if(timeLeft<=0) endGame(false); },1000);
+    }
+    function updateTimerDisplay(){
+        const m=Math.floor(timeLeft/60), s=timeLeft%60;
+        document.getElementById('timerDisplay').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        document.getElementById('timerDisplay').classList.toggle('warning', timeLeft<=30);
+    }
+    function playBeep(freq,dur,type='square'){
+        try{
+            const ac=new(window.AudioContext||window.webkitAudioContext)(), o=ac.createOscillator(), g=ac.createGain();
+            o.type=type; o.frequency.value=freq; g.gain.setValueAtTime(0.15,ac.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur); o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+dur);
+        }catch(e){}
+    }
+
+    // ========== 手册生成 ==========
+    document.getElementById('openManualBtn').addEventListener('click',()=>{
+        let html=`<button class="close-manual" id="closeManualBtn">✕</button><h1>🧨 拆弹手册</h1><p>序列号：<strong>${serial}</strong> (首字母 ${firstLetter}，末位 ${lastDigit}，元音数 ${vowelCount}，数字和 ${digitSum})</p>`;
+        if(activeModules.wire) html+=`<div class="rule-box"><h3>🔌 接线</h3><p>末位<span style="color:#c00">偶数</span>→剪<span style="color:#c00">第一根带★黄线</span>(无则第一根绿线)。<br>末位<span style="color:#c00">奇数</span>→剪<span style="color:#c00">第一根带★红线</span>(无则第二根蓝线)。</p></div>`;
+        if(activeModules.button) html+=`<div class="rule-box"><h3>🔴 按钮</h3><p>标签：${moduleData.button.label}，颜色：${moduleData.button.color}。查表：<table><tr><th>条件</th><th>操作</th></tr><tr><td>“引爆”且含元音</td><td>长按</td></tr><tr><td>“中止”</td><td>单击</td></tr><tr><td>其他且蓝色</td><td>单击</td></tr><tr><td>其他</td><td>长按</td></tr></table></p></div>`;
+        if(activeModules.code){
+            let rows=''; for(let s of moduleData.code.allSymbols) rows+=`<tr><td style="font-size:1.2rem;">${s}</td><td>→</td><td style="font-size:1.2rem;">${moduleData.code.map[s]}</td></tr>`;
+            html+=`<div class="rule-box"><h3>🔢 符号密码</h3><p>屏幕4符号，在下表中查找数字（含干扰符）。</p><table>${rows}</table></div>`;
+        }
+        if(activeModules.memory) html+=`<div class="rule-box"><h3>🧠 记忆数字</h3><p>点击“显示数字”仅一次，3秒后隐藏，按序输入。</p></div>`;
+        if(activeModules.direction){
+            let t=''; for(let r in directionTable) t+=`<tr><td>${r}</td><td>${directionTable[r].join(' ')}</td></tr>`;
+            html+=`<div class="rule-box"><h3>🧭 方向锁</h3><table>${t}</table></div>`;
+        }
+        if(activeModules.morse){
+            let t=''; for(let ch in morseTable) t+=`<tr><td>${ch}</td><td>${morseTable[ch]}</td></tr>`;
+            html+=`<div class="rule-box"><h3>📡 莫尔斯电码</h3><table>${t}</table></div>`;
+        }
+        if(activeModules.colorSeq){
+            let t=''; for(let d=0;d<=9;d++) t+=`<tr><td>${d}</td><td>${colorTable[d].join(' ')}</td></tr>`;
+            html+=`<div class="rule-box"><h3>🎨 颜色序列</h3><table>${t}</table></div>`;
+        }
+        if(activeModules.keypad){
+            let t=''; keypadTable.forEach((s,i)=> t+=`<tr><td>${i}</td><td>${s.join(' ')}</td></tr>`);
+            html+=`<div class="rule-box"><h3>🔢 数字键盘序列</h3><table>${t}</table></div>`;
+        }
+        if(activeModules.logic) html+=`<div class="rule-box"><h3>⚡ 逻辑开关</h3><p>含元音：1开2关3开4关；否则全关。</p></div>`;
+        if(activeModules.capacitor) html+=`<div class="rule-box"><h3>⚡ 电容放电</h3><p>末位0-4：20-30%；5-9：70-80%。在安全区间点放电，可重置。</p></div>`;
+        if(activeModules.wordlock){
+            let t=''; for(let ch in wordTable) t+=`<tr><td>${ch}</td><td>${wordTable[ch]}</td></tr>`;
+            html+=`<div class="rule-box"><h3>🔤 字母密码</h3><table>${t}</table></div>`;
+        }
+        if(activeModules.slider){
+            let t=''; sliderZones.forEach((z,i)=> t+=`<tr><td>${i}</td><td>${z[0]}%-${z[1]}%</td></tr>`);
+            html+=`<div class="rule-box"><h3>🎚️ 滑块校准</h3><table>${t}</table></div>`;
+        }
+        if(activeModules.binary) html+=`<div class="rule-box"><h3>💡 二进制指示灯</h3><p>数字和${digitSum}转4位二进制（如和3→0011）。LED亮=1，灭=0。</p></div>`;
+        if(activeModules.equation) html+=`<div class="rule-box"><h3>➗ 数学方程式</h3><p>A=末位数字，B=元音数量，C=首字母位置(A=1)。选择运算符或“不可能”。</p></div>`;
+        if(activeModules.rhythm){
+            let t=''; for(let w in rhythmTable) t+=`<tr><td>${w}</td><td>${rhythmTable[w].map(s=>s==='short'?'·':'—').join(' ')}</td></tr>`;
+            html+=`<div class="rule-box"><h3>🎵 节奏密码</h3><table>${t}</table></div>`;
+        }
+        if(activeModules.cipher) html+=`<div class="rule-box"><h3>🔀 字母偏移锁</h3><p>偏移=首字母位置(0起)，加密文本左移偏移量。常见单词：${commonWords.join(',')}。</p></div>`;
+        if(activeModules.roman){
+            let t='<tr><th>罗马数字</th><th>值</th></tr>';
+            for(let r in romanNumerals) t+=`<tr><td>${r}</td><td>${romanNumerals[r]}</td></tr>`;
+            html+=`<div class="rule-box"><h3>🏛️ 罗马数字</h3><table>${t}</table></div>`;
+        }
+        document.getElementById('manualContent').innerHTML = html;
+        document.getElementById('manualOverlay').classList.add('active');
+        document.getElementById('closeManualBtn').addEventListener('click', ()=> document.getElementById('manualOverlay').classList.remove('active'));
+    });
+    document.getElementById('manualOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget) e.currentTarget.classList.remove('active'); });
+
+    updateRankUI();
+})();
+</script>
+</body>
+</html>
